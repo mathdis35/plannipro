@@ -6,607 +6,443 @@
 <title>PlanniPro — Générateur de Planning</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,300&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+:root{--bg:#F4F1EB;--surface:#FEFCF8;--ink:#1C1810;--muted:#897E70;--border:#DDD8CF;--green:#2A5C40;--green-l:#EAF1EC;--amber:#B5550E;--amber-l:#FBF0E7;--blue:#1A4A7A;--blue-l:#E8F0FA;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14.5px;line-height:1.5;}
+.banner{background:var(--ink);color:#EDE8DF;display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:60px;position:sticky;top:0;z-index:50;}
+.brand{font-family:'Fraunces',serif;font-size:20px;font-weight:700;}
+.brand em{color:#7ECC9B;font-style:normal;}
+.banner-tag{font-size:11px;font-weight:500;letter-spacing:1.8px;text-transform:uppercase;color:#7A7268;border:1px solid #333;border-radius:20px;padding:3px 12px;}
+.hero{background:var(--ink);color:#EDE8DF;padding:40px 40px 36px;}
+.hero h1{font-family:'Fraunces',serif;font-size:42px;font-weight:300;line-height:1.1;letter-spacing:-1px;max-width:600px;margin-bottom:10px;}
+.hero h1 em{color:#7ECC9B;font-style:italic;}
+.hero p{color:#8A8278;font-size:14px;max-width:480px;font-weight:300;}
+.main{max-width:980px;margin:0 auto;padding:40px 32px 80px;}
 
-:root {
-  --bg:      #F4F1EB;
-  --surface: #FEFCF8;
-  --ink:     #1C1810;
-  --muted:   #897E70;
-  --border:  #DDD8CF;
-  --green:   #2A5C40;
-  --green-l: #EAF1EC;
-  --amber:   #B5550E;
-  --amber-l: #FBF0E7;
-  --red:     #8B2200;
-}
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:28px;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:4px;}
+.tab{flex:1;text-align:center;padding:10px 16px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s;border:none;background:none;font-family:'DM Sans',sans-serif;}
+.tab:hover{color:var(--ink);}
+.tab.active{background:var(--ink);color:white;}
+.tab .tab-icon{font-size:16px;margin-right:6px;}
+.panel{display:none;}
+.panel.active{display:block;}
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--bg);
-  color: var(--ink);
-  min-height: 100vh;
-  font-size: 14.5px;
-  line-height: 1.5;
-}
-
-/* ─── Bannière ─── */
-.banner {
-  background: var(--ink);
-  color: #EDE8DF;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 40px;
-  height: 60px;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-}
-.brand {
-  font-family: 'Fraunces', serif;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
-}
-.brand em { color: #7ECC9B; font-style: normal; }
-.banner-tag {
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 1.8px;
-  text-transform: uppercase;
-  color: #7A7268;
-  border: 1px solid #333;
-  border-radius: 20px;
-  padding: 3px 12px;
-}
-
-/* ─── Hero ─── */
-.hero {
-  background: var(--ink);
-  color: #EDE8DF;
-  padding: 52px 40px 48px;
-  border-bottom: 1px solid #2A2720;
-}
-.hero h1 {
-  font-family: 'Fraunces', serif;
-  font-size: 48px;
-  font-weight: 300;
-  line-height: 1.08;
-  letter-spacing: -1px;
-  max-width: 600px;
-  margin-bottom: 14px;
-}
-.hero h1 em { color: #7ECC9B; font-style: italic; }
-.hero p {
-  color: #8A8278;
-  font-size: 15px;
-  max-width: 480px;
-  font-weight: 300;
-}
-
-/* ─── Layout principal ─── */
-.main { max-width: 960px; margin: 0 auto; padding: 48px 32px 80px; }
-
-/* ─── Étapes ─── */
-.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-.step-full { grid-column: 1/-1; }
-
-.card {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 16px;
-  padding: 26px;
-  transition: border-color .2s;
-}
-.card:hover { border-color: #C8C1B5; }
-
-.step-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 8px;
-}
-.step-tag::before {
-  content: '';
-  display: block;
-  width: 16px;
-  height: 1px;
-  background: var(--muted);
-  opacity: .5;
-}
-.card h2 {
-  font-family: 'Fraunces', serif;
-  font-size: 19px;
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-.card p { font-size: 12.5px; color: var(--muted); margin-bottom: 18px; line-height: 1.45; }
-
-/* ─── Upload zone ─── */
-.drop-zone {
-  border: 2px dashed var(--border);
-  border-radius: 12px;
-  padding: 18px 16px;
-  text-align: center;
-  cursor: pointer;
-  position: relative;
-  background: var(--bg);
-  transition: all .2s;
-}
-.drop-zone:hover, .drop-zone.over {
-  border-color: var(--green);
-  background: var(--green-l);
-}
-.drop-zone input {
-  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-}
-.drop-icon { font-size: 26px; margin-bottom: 6px; }
-.drop-text { font-size: 12.5px; color: var(--muted); }
-.drop-text strong { color: var(--ink); font-weight: 500; }
-
-/* ─── Fichiers ─── */
-.file-list { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
-.file-chip {
-  display: flex; align-items: center; gap: 8px;
-  background: var(--green-l);
-  border: 1px solid #B8D4C0;
-  border-radius: 8px;
-  padding: 7px 10px;
-  font-size: 12.5px; font-weight: 500; color: var(--green);
-}
-.file-chip .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.file-chip button {
-  border: none; background: none; cursor: pointer;
-  color: var(--green); opacity: .5; font-size: 16px; padding: 0 2px; line-height: 1;
-  transition: opacity .15s;
-}
-.file-chip button:hover { opacity: 1; }
-
-/* ─── Sélecteur mois ─── */
-.year-header {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
-}
-.year-header span {
-  font-size: 10.5px; font-weight: 600; letter-spacing: 1.5px;
-  text-transform: uppercase; color: var(--muted); white-space: nowrap;
-}
-.year-header hr { flex: 1; border: none; border-top: 1px solid var(--border); }
-
-.months-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; margin-bottom: 16px; }
-.month-btn {
-  border: 1.5px solid var(--border); background: var(--surface);
-  border-radius: 10px; padding: 9px 5px; text-align: center;
-  cursor: pointer; font-family: 'DM Sans', sans-serif;
-  font-size: 12px; font-weight: 500; color: var(--muted);
-  transition: all .15s;
-}
-.month-btn small { display: block; font-size: 10.5px; font-weight: 400; opacity: .7; margin-top: 1px; }
-.month-btn:hover { border-color: var(--green); color: var(--green); background: var(--green-l); }
-.month-btn.on { border-color: var(--green); background: var(--green); color: white; }
-.month-btn.on small { opacity: .85; }
-
-/* ─── Action ─── */
-.action-row {
-  display: flex; align-items: center; gap: 20px; margin-top: 28px;
-}
-.btn-gen {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--green); color: white; border: none;
-  border-radius: 12px; padding: 15px 30px;
-  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
-  cursor: pointer; letter-spacing: -.2px;
-  transition: all .2s;
-}
-.btn-gen:hover:not(:disabled) {
-  background: #224D35; transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(42,92,64,.3);
-}
-.btn-gen:disabled { background: #9DB5A5; cursor: not-allowed; }
-.btn-gen svg { width: 18px; height: 18px; }
-.action-hint { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
-.action-hint.ok { color: var(--green); }
-
-/* ─── Progress ─── */
-.progress-bar {
-  display: none; background: var(--ink); color: white;
-  border-radius: 12px; padding: 15px 20px; margin-top: 20px;
-  align-items: center; gap: 14px; font-size: 13.5px;
-}
-.progress-bar.show { display: flex; }
-.spinner {
-  width: 18px; height: 18px; border-radius: 50%;
-  border: 2px solid rgba(255,255,255,.25); border-top-color: white;
-  animation: spin .75s linear infinite; flex-shrink: 0;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ─── Résultat ─── */
-.result-card {
-  display: none; background: var(--green); color: white;
-  border-radius: 16px; padding: 24px; margin-top: 20px;
-  align-items: center; gap: 20px;
-}
-.result-card.show { display: flex; }
-.result-card .icon { font-size: 38px; flex-shrink: 0; }
-.result-info { flex: 1; }
-.result-info h3 { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 500; margin-bottom: 3px; }
-.result-info p  { font-size: 13px; opacity: .85; }
-.btn-dl {
-  display: flex; align-items: center; gap: 8px;
-  background: white; color: var(--green);
-  border: none; border-radius: 10px; padding: 12px 18px;
-  font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 600;
-  cursor: pointer; white-space: nowrap;
-  transition: all .2s;
-}
-.btn-dl:hover { background: #F0F9F3; transform: translateY(-1px); }
-
-/* ─── Stats ─── */
-.stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 18px; }
-.stat {
-  background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: 12px; padding: 16px 14px; text-align: center;
-}
-.stat .val { font-family: 'Fraunces', serif; font-size: 30px; color: var(--green); }
-.stat .lbl { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
-
-/* ─── Rapport heures ─── */
-.heures-card {
-  display: none; background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: 16px; padding: 26px; margin-top: 16px;
-}
-.heures-card.show { display: block; }
-.heures-card h3 {
-  font-family: 'Fraunces', serif; font-size: 16px; font-weight: 500;
-  color: var(--muted); margin-bottom: 16px;
-}
-.heures-table { width: 100%; border-collapse: collapse; }
-.heures-table th {
-  text-align: left; font-size: 11px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
-  padding: 0 0 8px; border-bottom: 1px solid var(--border);
-}
-.heures-table td {
-  padding: 9px 0; border-bottom: 1px solid var(--border);
-  font-size: 13px; vertical-align: top;
-}
-.heures-table td:first-child { font-weight: 600; width: 140px; }
-.tag {
-  display: inline-block; background: var(--green-l); color: var(--green);
-  border-radius: 5px; padding: 2px 7px; font-size: 11px;
-  font-weight: 500; margin: 1px;
-}
-.tag.warn { background: var(--amber-l); color: var(--amber); }
-
-/* ─── Alert ─── */
-.alert {
-  display: none; border-radius: 10px; padding: 13px 16px;
-  font-size: 13px; gap: 10px; align-items: flex-start;
-  margin-top: 14px; line-height: 1.45;
-}
-.alert.show { display: flex; }
-.alert.warn { background: var(--amber-l); border: 1px solid #E8C5A5; color: var(--amber); }
-
-/* ─── Footer ─── */
-footer {
-  text-align: center; padding: 28px; font-size: 12px; color: var(--muted);
-  border-top: 1px solid var(--border);
-}
+.steps{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.step-full{grid-column:1/-1;}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:24px;transition:border-color .2s;}
+.card:hover{border-color:#C8C1B5;}
+.card.blue-accent{border-color:#B8CCE4;}
+.card.blue-accent:hover{border-color:#7AAAD4;}
+.step-tag{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.step-tag::before{content:'';display:block;width:16px;height:1px;background:var(--muted);opacity:.5;}
+.step-tag.blue{color:var(--blue);}
+.step-tag.blue::before{background:var(--blue);}
+.card h2{font-family:'Fraunces',serif;font-size:19px;font-weight:500;margin-bottom:4px;}
+.card p{font-size:12.5px;color:var(--muted);margin-bottom:18px;line-height:1.45;}
+.drop-zone{border:2px dashed var(--border);border-radius:12px;padding:18px 16px;text-align:center;cursor:pointer;position:relative;background:var(--bg);transition:all .2s;}
+.drop-zone:hover,.drop-zone.over{border-color:var(--green);background:var(--green-l);}
+.drop-zone.blue-drop:hover,.drop-zone.blue-drop.over{border-color:var(--blue);background:var(--blue-l);}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.drop-icon{font-size:26px;margin-bottom:6px;}
+.drop-text{font-size:12.5px;color:var(--muted);}
+.drop-text strong{color:var(--ink);font-weight:500;}
+.file-list{display:flex;flex-direction:column;gap:5px;margin-top:10px;}
+.file-chip{display:flex;align-items:center;gap:8px;background:var(--green-l);border:1px solid #B8D4C0;border-radius:8px;padding:7px 10px;font-size:12.5px;font-weight:500;color:var(--green);}
+.file-chip.blue{background:var(--blue-l);border-color:#B8CCE4;color:var(--blue);}
+.file-chip .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.file-chip button{border:none;background:none;cursor:pointer;opacity:.5;font-size:16px;padding:0 2px;line-height:1;color:inherit;}
+.file-chip button:hover{opacity:1;}
+.year-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.year-header span{font-size:10.5px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.year-header hr{flex:1;border:none;border-top:1px solid var(--border);}
+.months-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-bottom:16px;}
+.month-btn{border:1.5px solid var(--border);background:var(--surface);border-radius:10px;padding:9px 5px;text-align:center;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--muted);transition:all .15s;}
+.month-btn small{display:block;font-size:10.5px;font-weight:400;opacity:.7;margin-top:1px;}
+.month-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-l);}
+.month-btn.on{border-color:var(--green);background:var(--green);color:white;}
+.year-select-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.year-select-row label{font-size:13px;font-weight:500;color:var(--muted);}
+.year-select{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;border:1.5px solid var(--border);border-radius:10px;padding:8px 14px;background:var(--surface);color:var(--ink);cursor:pointer;}
+.year-select:focus{outline:none;border-color:var(--blue);}
+.action-row{display:flex;align-items:center;gap:20px;margin-top:24px;}
+.btn-gen{display:flex;align-items:center;gap:10px;color:white;border:none;border-radius:12px;padding:14px 28px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-gen.green{background:var(--green);}
+.btn-gen.green:hover:not(:disabled){background:#224D35;transform:translateY(-1px);box-shadow:0 8px 24px rgba(42,92,64,.3);}
+.btn-gen.blue{background:var(--blue);}
+.btn-gen.blue:hover:not(:disabled){background:#143D6A;transform:translateY(-1px);box-shadow:0 8px 24px rgba(26,74,122,.3);}
+.btn-gen:disabled{background:#A0B0A8;cursor:not-allowed;}
+.btn-gen svg{width:17px;height:17px;}
+.action-hint{font-size:12.5px;color:var(--muted);line-height:1.5;}
+.action-hint.ok{color:var(--green);}
+.action-hint.ok-blue{color:var(--blue);}
+.progress-bar{display:none;background:var(--ink);color:white;border-radius:12px;padding:15px 20px;margin-top:20px;align-items:center;gap:14px;font-size:13.5px;}
+.progress-bar.show{display:flex;}
+.spinner{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.25);border-top-color:white;animation:spin .75s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.result-card{display:none;border-radius:16px;padding:24px;margin-top:20px;align-items:center;gap:20px;}
+.result-card.show{display:flex;}
+.result-card.green{background:var(--green);}
+.result-card.blue{background:var(--blue);}
+.result-card .icon{font-size:38px;flex-shrink:0;}
+.result-info{flex:1;color:white;}
+.result-info h3{font-family:'Fraunces',serif;font-size:20px;font-weight:500;margin-bottom:3px;}
+.result-info p{font-size:13px;opacity:.85;}
+.btn-dl{display:flex;align-items:center;gap:8px;background:white;border:none;border-radius:10px;padding:12px 18px;font-family:'DM Sans',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s;}
+.btn-dl.green{color:var(--green);}
+.btn-dl.blue{color:var(--blue);}
+.btn-dl:hover{opacity:.9;transform:translateY(-1px);}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px;}
+.stat{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px 14px;text-align:center;}
+.stat .val{font-family:'Fraunces',serif;font-size:28px;color:var(--green);}
+.stat .val.blue{color:var(--blue);}
+.stat .lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+.heures-card{display:none;background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-top:16px;}
+.heures-card.show{display:block;}
+.heures-card h3{font-family:'Fraunces',serif;font-size:15px;font-weight:500;color:var(--muted);margin-bottom:14px;}
+.heures-table{width:100%;border-collapse:collapse;}
+.heures-table th{text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:0 0 8px;border-bottom:1px solid var(--border);}
+.heures-table td{padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top;}
+.heures-table td:first-child{font-weight:600;width:140px;}
+.tag{display:inline-block;background:var(--green-l);color:var(--green);border-radius:5px;padding:2px 7px;font-size:11px;font-weight:500;margin:1px;}
+.alert{display:none;border-radius:10px;padding:13px 16px;font-size:13px;gap:10px;align-items:flex-start;margin-top:14px;line-height:1.45;}
+.alert.show{display:flex;}
+.alert.warn{background:var(--amber-l);border:1px solid #E8C5A5;color:var(--amber);}
+.info-box{background:var(--blue-l);border:1.5px solid #B8CCE4;border-radius:12px;padding:16px 18px;margin-bottom:20px;font-size:13px;color:var(--blue);line-height:1.6;}
+.info-box strong{font-weight:600;}
+footer{text-align:center;padding:28px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);}
 </style>
 </head>
 <body>
-
 <nav class="banner">
   <div class="brand">Planni<em>Pro</em></div>
   <div class="banner-tag">Centre de formation</div>
 </nav>
-
 <div class="hero">
   <h1>Planning d'affichage<br><em>automatique</em></h1>
-  <p>Importez vos fichiers, choisissez les mois — le planning est généré en quelques secondes, prêt à imprimer.</p>
+  <p>Générez les templates colorés et les plannings d'affichage avec formateurs en quelques secondes.</p>
 </div>
-
 <div class="main">
-  <div class="steps">
 
-    <!-- Étape 1 -->
-    <div class="card">
-      <div class="step-tag">Étape 01</div>
-      <h2>Plannings des classes</h2>
-      <p>Un fichier .xls par classe — les jours avec cours en bleu seront détectés automatiquement.</p>
-      <div class="drop-zone" id="z-classes"
-           ondragover="ev.preventDefault();this.classList.add('over')"
-           ondragleave="this.classList.remove('over')"
-           ondrop="drop(event,'classes')">
-        <input type="file" id="i-classes" multiple accept=".xls,.xlsx" onchange="addFiles('classes',this.files)">
-        <div class="drop-icon">📋</div>
-        <div class="drop-text"><strong>Cliquez ou déposez</strong> vos fichiers<br><small>Formats .xls et .xlsx acceptés</small></div>
-      </div>
-      <div class="file-list" id="fl-classes"></div>
-    </div>
-
-    <!-- Étape 2 -->
-    <div class="card">
-      <div class="step-tag">Étape 02</div>
-      <h2>Disponibilités formateurs</h2>
-      <p>Un fichier par formateur — tableau avec X dans les cases matin/pm des jours disponibles.</p>
-      <div class="drop-zone" id="z-dispos"
-           ondragover="ev.preventDefault();this.classList.add('over')"
-           ondragleave="this.classList.remove('over')"
-           ondrop="drop(event,'dispos')">
-        <input type="file" id="i-dispos" multiple accept=".xlsx,.xls" onchange="addFiles('dispos',this.files)">
-        <div class="drop-icon">👤</div>
-        <div class="drop-text"><strong>1 fichier par formateur</strong><br><small>Tous les formateurs de la rentrée</small></div>
-      </div>
-      <div class="file-list" id="fl-dispos"></div>
-    </div>
-
-    <!-- Étape 3 -->
-    <div class="card">
-      <div class="step-tag">Étape 03</div>
-      <h2>Tableau des formateurs</h2>
-      <p>Récapitulatif des affectations — qui enseigne quoi dans quelle classe et combien d'heures.</p>
-      <div class="drop-zone" id="z-form"
-           ondragover="ev.preventDefault();this.classList.add('over')"
-           ondragleave="this.classList.remove('over')"
-           ondrop="drop(event,'formateurs')">
-        <input type="file" id="i-form" accept=".xlsx,.xls" onchange="addFiles('formateurs',this.files)">
-        <div class="drop-icon">📊</div>
-        <div class="drop-text"><strong>Tableau_formateurs_rentrée.xlsx</strong><br><small>Un seul fichier</small></div>
-      </div>
-      <div class="file-list" id="fl-formateurs"></div>
-    </div>
-
-    <!-- Étape 4 -->
-    <div class="card">
-      <div class="step-tag">Étape 04</div>
-      <h2>Template d'affichage</h2>
-      <p>Le fichier vierge avec la mise en page mensuelle — les noms y seront insérés automatiquement.</p>
-      <div class="drop-zone" id="z-tpl"
-           ondragover="ev.preventDefault();this.classList.add('over')"
-           ondragleave="this.classList.remove('over')"
-           ondrop="drop(event,'template')">
-        <input type="file" id="i-tpl" accept=".xlsx,.xls" onchange="addFiles('template',this.files)">
-        <div class="drop-icon">🗓️</div>
-        <div class="drop-text"><strong>SEPTEMBRE_2026.xlsx</strong> ou similaire<br><small>Template mensuel vierge</small></div>
-      </div>
-      <div class="file-list" id="fl-template"></div>
-    </div>
-
-    <!-- Étape 5 : Mois -->
-    <div class="card step-full">
-      <div class="step-tag">Étape 05</div>
-      <h2>Mois à générer</h2>
-      <p>Chaque mois sélectionné devient un onglet dans le fichier final.</p>
-
-      <div class="year-header"><span>2026</span><hr></div>
-      <div class="months-grid">
-        <button class="month-btn" data-m="8" data-y="2026" onclick="toggleMonth(this)">Août<small>2026</small></button>
-        <button class="month-btn" data-m="9" data-y="2026" onclick="toggleMonth(this)">Sept.<small>2026</small></button>
-        <button class="month-btn" data-m="10" data-y="2026" onclick="toggleMonth(this)">Oct.<small>2026</small></button>
-        <button class="month-btn" data-m="11" data-y="2026" onclick="toggleMonth(this)">Nov.<small>2026</small></button>
-        <button class="month-btn" data-m="12" data-y="2026" onclick="toggleMonth(this)">Déc.<small>2026</small></button>
-        <div></div>
-      </div>
-
-      <div class="year-header"><span>2027</span><hr></div>
-      <div class="months-grid">
-        <button class="month-btn" data-m="1" data-y="2027" onclick="toggleMonth(this)">Janv.<small>2027</small></button>
-        <button class="month-btn" data-m="2" data-y="2027" onclick="toggleMonth(this)">Févr.<small>2027</small></button>
-        <button class="month-btn" data-m="3" data-y="2027" onclick="toggleMonth(this)">Mars<small>2027</small></button>
-        <button class="month-btn" data-m="4" data-y="2027" onclick="toggleMonth(this)">Avr.<small>2027</small></button>
-        <button class="month-btn" data-m="5" data-y="2027" onclick="toggleMonth(this)">Mai<small>2027</small></button>
-        <button class="month-btn" data-m="6" data-y="2027" onclick="toggleMonth(this)">Juin<small>2027</small></button>
-      </div>
-    </div>
-
-  </div><!-- /.steps -->
-
-  <!-- Génération -->
-  <div class="action-row">
-    <button class="btn-gen" id="btn" onclick="generer()" disabled>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-      </svg>
-      Générer le planning
+  <!-- Onglets -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('template')">
+      <span class="tab-icon">🗓️</span>Générer le template colorié
     </button>
-    <div class="action-hint" id="hint">Complétez les étapes 1 à 5 pour activer la génération.</div>
+    <button class="tab" onclick="switchTab('planning')">
+      <span class="tab-icon">⚡</span>Générer le planning avec formateurs
+    </button>
   </div>
 
-  <!-- Progress -->
-  <div class="progress-bar" id="progress">
-    <div class="spinner"></div>
-    <span id="progress-txt">Traitement en cours…</span>
-  </div>
+  <!-- ═══ PANEL 1 : Template colorié ═══ -->
+  <div class="panel active" id="panel-template">
 
-  <!-- Résultat -->
-  <div class="result-card" id="result">
-    <div class="icon">✅</div>
-    <div class="result-info">
-      <h3>Planning généré !</h3>
-      <p id="result-meta">—</p>
+    <div class="info-box">
+      <strong>Comment ça marche ?</strong> Uploadez vos plannings de classes (.xls) et un template vierge (.xlsx). 
+      Le système détecte les jours de cours de chaque classe et colorie automatiquement les bonnes cases 
+      avec la couleur de chaque classe. Un fichier avec <strong>12 onglets</strong> (Septembre → Août) est généré.
     </div>
-    <button class="btn-dl" id="btn-dl">⬇ Télécharger</button>
+
+    <div class="steps">
+      <div class="card blue-accent">
+        <div class="step-tag blue">Étape 01</div>
+        <h2>Plannings des classes</h2>
+        <p>Un fichier .xls par classe — les jours colorés en bleu = jours de cours.</p>
+        <div class="drop-zone blue-drop" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="drop2(event,'tpl-classes')">
+          <input type="file" multiple accept=".xls,.xlsx" onchange="addFiles2('tpl-classes',this.files)">
+          <div class="drop-icon">📋</div>
+          <div class="drop-text"><strong>Cliquez ou déposez</strong> vos fichiers<br><small>Formats .xls et .xlsx</small></div>
+        </div>
+        <div class="file-list" id="fl2-tpl-classes"></div>
+      </div>
+
+      <div class="card blue-accent">
+        <div class="step-tag blue">Étape 02</div>
+        <h2>Template vierge</h2>
+        <p>Le fichier Excel avec la mise en page et les couleurs de chaque classe déjà définies.</p>
+        <div class="drop-zone blue-drop" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="drop2(event,'tpl-template')">
+          <input type="file" accept=".xlsx,.xls" onchange="addFiles2('tpl-template',this.files)">
+          <div class="drop-icon">🎨</div>
+          <div class="drop-text"><strong>Template avec couleurs</strong> par classe<br><small>Ex : SEPTEMBRE_2026.xlsx</small></div>
+        </div>
+        <div class="file-list" id="fl2-tpl-template"></div>
+      </div>
+
+      <div class="card blue-accent step-full">
+        <div class="step-tag blue">Étape 03</div>
+        <h2>Année scolaire</h2>
+        <p>Choisissez l'année de début — 12 onglets seront générés de Septembre à Août.</p>
+        <div class="year-select-row">
+          <label>Rentrée de :</label>
+          <select class="year-select" id="annee-select">
+            <option value="2025">2025 → 2026</option>
+            <option value="2026" selected>2026 → 2027</option>
+            <option value="2027">2027 → 2028</option>
+            <option value="2028">2028 → 2029</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-gen blue" id="btn-tpl" onclick="genererTemplate()" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
+        Générer le template colorié
+      </button>
+      <div class="action-hint" id="hint-tpl">Uploadez les plannings de classes et le template vierge.</div>
+    </div>
+
+    <div class="progress-bar" id="progress-tpl">
+      <div class="spinner"></div>
+      <span id="ptxt-tpl">Génération en cours…</span>
+    </div>
+
+    <div class="result-card blue" id="result-tpl">
+      <div class="icon">🎨</div>
+      <div class="result-info">
+        <h3>Template colorié généré !</h3>
+        <p id="rmeta-tpl">—</p>
+      </div>
+      <button class="btn-dl blue" id="dl-tpl">⬇ Télécharger</button>
+    </div>
+
+    <div class="stats" id="stats-tpl" style="display:none">
+      <div class="stat"><div class="val blue" id="st1">—</div><div class="lbl">Cases coloriées</div></div>
+      <div class="stat"><div class="val blue" id="st2">—</div><div class="lbl">Mois générés</div></div>
+      <div class="stat"><div class="val blue" id="st3">—</div><div class="lbl">Classes traitées</div></div>
+      <div class="stat"><div class="val blue" id="st4">12</div><div class="lbl">Onglets créés</div></div>
+    </div>
+
+    <div class="alert warn" id="alert-tpl"><span>⚠️</span><span id="atxt-tpl"></span></div>
   </div>
 
-  <!-- Stats -->
-  <div class="stats" id="stats" style="display:none">
-    <div class="stat"><div class="val" id="s1">—</div><div class="lbl">Sessions assignées</div></div>
-    <div class="stat"><div class="val" id="s2">—</div><div class="lbl">Formateurs actifs</div></div>
-    <div class="stat"><div class="val" id="s3">—</div><div class="lbl">Classes traitées</div></div>
-    <div class="stat"><div class="val" id="s4" style="color:var(--amber)">—</div><div class="lbl">Sans formateur</div></div>
+  <!-- ═══ PANEL 2 : Planning avec formateurs ═══ -->
+  <div class="panel" id="panel-planning">
+    <div class="steps">
+      <div class="card">
+        <div class="step-tag">Étape 01</div>
+        <h2>Plannings des classes</h2>
+        <p>Un fichier .xls par classe — les jours colorés en bleu = jours de cours.</p>
+        <div class="drop-zone" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="drop(event,'classes')">
+          <input type="file" multiple accept=".xls,.xlsx" onchange="addFiles('classes',this.files)">
+          <div class="drop-icon">📋</div>
+          <div class="drop-text"><strong>Cliquez ou déposez</strong> vos fichiers</div>
+        </div>
+        <div class="file-list" id="fl-classes"></div>
+      </div>
+      <div class="card">
+        <div class="step-tag">Étape 02</div>
+        <h2>Disponibilités formateurs</h2>
+        <p>Un fichier par formateur — X dans les cases matin/pm des jours disponibles.</p>
+        <div class="drop-zone" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="drop(event,'dispos')">
+          <input type="file" multiple accept=".xlsx,.xls" onchange="addFiles('dispos',this.files)">
+          <div class="drop-icon">👤</div>
+          <div class="drop-text"><strong>1 fichier par formateur</strong></div>
+        </div>
+        <div class="file-list" id="fl-dispos"></div>
+      </div>
+      <div class="card">
+        <div class="step-tag">Étape 03</div>
+        <h2>Tableau des formateurs</h2>
+        <p>Qui enseigne quoi, dans quelle classe, et combien d'heures.</p>
+        <div class="drop-zone" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="drop(event,'formateurs')">
+          <input type="file" accept=".xlsx,.xls" onchange="addFiles('formateurs',this.files)">
+          <div class="drop-icon">📊</div>
+          <div class="drop-text"><strong>Tableau_formateurs.xlsx</strong></div>
+        </div>
+        <div class="file-list" id="fl-formateurs"></div>
+      </div>
+      <div class="card">
+        <div class="step-tag">Étape 04</div>
+        <h2>Template d'affichage</h2>
+        <p>Le fichier vierge colorié (généré à l'étape précédente ou uploadé).</p>
+        <div class="drop-zone" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="drop(event,'template')">
+          <input type="file" accept=".xlsx,.xls" onchange="addFiles('template',this.files)">
+          <div class="drop-icon">🗓️</div>
+          <div class="drop-text"><strong>Template colorié vierge</strong></div>
+        </div>
+        <div class="file-list" id="fl-template"></div>
+      </div>
+      <div class="card step-full">
+        <div class="step-tag">Étape 05</div>
+        <h2>Mois à générer</h2>
+        <p>Chaque mois sélectionné devient un onglet dans le fichier final.</p>
+        <div class="year-header"><span>2026</span><hr></div>
+        <div class="months-grid">
+          <button class="month-btn" data-m="8" data-y="2026" onclick="toggleMonth(this)">Août<small>2026</small></button>
+          <button class="month-btn" data-m="9" data-y="2026" onclick="toggleMonth(this)">Sept.<small>2026</small></button>
+          <button class="month-btn" data-m="10" data-y="2026" onclick="toggleMonth(this)">Oct.<small>2026</small></button>
+          <button class="month-btn" data-m="11" data-y="2026" onclick="toggleMonth(this)">Nov.<small>2026</small></button>
+          <button class="month-btn" data-m="12" data-y="2026" onclick="toggleMonth(this)">Déc.<small>2026</small></button>
+          <div></div>
+        </div>
+        <div class="year-header"><span>2027</span><hr></div>
+        <div class="months-grid">
+          <button class="month-btn" data-m="1" data-y="2027" onclick="toggleMonth(this)">Janv.<small>2027</small></button>
+          <button class="month-btn" data-m="2" data-y="2027" onclick="toggleMonth(this)">Févr.<small>2027</small></button>
+          <button class="month-btn" data-m="3" data-y="2027" onclick="toggleMonth(this)">Mars<small>2027</small></button>
+          <button class="month-btn" data-m="4" data-y="2027" onclick="toggleMonth(this)">Avr.<small>2027</small></button>
+          <button class="month-btn" data-m="5" data-y="2027" onclick="toggleMonth(this)">Mai<small>2027</small></button>
+          <button class="month-btn" data-m="6" data-y="2027" onclick="toggleMonth(this)">Juin<small>2027</small></button>
+        </div>
+      </div>
+    </div>
+    <div class="action-row">
+      <button class="btn-gen green" id="btn-plan" onclick="genererPlanning()" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Générer le planning
+      </button>
+      <div class="action-hint" id="hint-plan">Complétez les étapes 1 à 5.</div>
+    </div>
+    <div class="progress-bar" id="progress-plan"><div class="spinner"></div><span id="ptxt-plan">Traitement…</span></div>
+    <div class="result-card green" id="result-plan">
+      <div class="icon">✅</div>
+      <div class="result-info"><h3>Planning généré !</h3><p id="rmeta-plan">—</p></div>
+      <button class="btn-dl green" id="dl-plan">⬇ Télécharger</button>
+    </div>
+    <div class="stats" id="stats-plan" style="display:none">
+      <div class="stat"><div class="val" id="sp1">—</div><div class="lbl">Sessions assignées</div></div>
+      <div class="stat"><div class="val" id="sp2">—</div><div class="lbl">Formateurs actifs</div></div>
+      <div class="stat"><div class="val" id="sp3">—</div><div class="lbl">Classes traitées</div></div>
+      <div class="stat"><div class="val" id="sp4" style="color:var(--amber)">—</div><div class="lbl">Sans formateur</div></div>
+    </div>
+    <div class="heures-card" id="heures-card"><h3>Heures assignées par formateur</h3>
+      <table class="heures-table"><thead><tr><th>Formateur</th><th>Matières</th><th style="text-align:right">Total</th></tr></thead>
+      <tbody id="heures-body"></tbody></table></div>
+    <div class="alert warn" id="alert-plan"><span>⚠️</span><span id="atxt-plan"></span></div>
   </div>
 
-  <!-- Rapport heures -->
-  <div class="heures-card" id="heures-card">
-    <h3>Récapitulatif des heures assignées</h3>
-    <table class="heures-table">
-      <thead><tr><th>Formateur</th><th>Matières & heures</th><th style="text-align:right">Total</th></tr></thead>
-      <tbody id="heures-body"></tbody>
-    </table>
-  </div>
-
-  <!-- Alerte -->
-  <div class="alert warn" id="alert">
-    <span>⚠️</span><span id="alert-txt"></span>
-  </div>
-
-</div><!-- /.main -->
-
-<footer>PlanniPro · Outil de gestion du centre de formation · Données traitées sur le serveur et supprimées après téléchargement</footer>
+</div>
+<footer>PlanniPro · Centre de formation · Données supprimées après téléchargement</footer>
 
 <script>
-const store = { classes: [], dispos: [], formateurs: [], template: [] };
-const months = new Set();
-let dlUrl = null;
+// ── State ──
+const s1={classes:[],dispos:[],formateurs:[],template:[]};
+const s2={'tpl-classes':[],'tpl-template':[]};
+const months=new Set();
 
-function drop(e, key) {
-  e.preventDefault();
-  document.getElementById('z-' + {classes:'classes',dispos:'dispos',formateurs:'form',template:'tpl'}[key]).classList.remove('over');
-  addFiles(key, e.dataTransfer.files);
+// ── Tabs ──
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  event.target.closest('.tab').classList.add('active');
 }
 
-function addFiles(key, files) {
-  const single = key === 'formateurs' || key === 'template';
-  if (single) store[key] = [files[0]];
-  else store[key] = [...store[key], ...Array.from(files)];
-  renderFiles(key);
-  check();
+// ── Panel 1 (template) ──
+function drop2(e,key){e.preventDefault();e.currentTarget.classList.remove('over');addFiles2(key,e.dataTransfer.files);}
+function addFiles2(key,files){
+  const single=key==='tpl-template';
+  if(single) s2[key]=[files[0]]; else s2[key]=[...s2[key],...Array.from(files)];
+  renderFiles2(key); checkTpl();
+}
+function renderFiles2(key){
+  const el=document.getElementById('fl2-'+key);
+  el.innerHTML=s2[key].map((f,i)=>`<div class="file-chip blue"><span>📄</span><span class="name">${f.name}</span><button onclick="removeFile2('${key}',${i})">×</button></div>`).join('');
+}
+function removeFile2(key,i){s2[key].splice(i,1);renderFiles2(key);checkTpl();}
+function checkTpl(){
+  const ok=s2['tpl-classes'].length>0&&s2['tpl-template'].length>0;
+  document.getElementById('btn-tpl').disabled=!ok;
+  const hint=document.getElementById('hint-tpl');
+  if(ok){hint.textContent=`✓ ${s2['tpl-classes'].length} classe(s) · template prêt`;hint.className='action-hint ok-blue';}
+  else{hint.textContent='Uploadez les plannings de classes et le template vierge.';hint.className='action-hint';}
 }
 
-function renderFiles(key) {
-  const id = { classes: 'fl-classes', dispos: 'fl-dispos', formateurs: 'fl-formateurs', template: 'fl-template' }[key];
-  const el = document.getElementById(id);
-  el.innerHTML = store[key].map((f, i) => `
-    <div class="file-chip">
-      <span>📄</span>
-      <span class="name">${f.name}</span>
-      <button onclick="removeFile('${key}',${i})">×</button>
-    </div>`).join('');
+async function genererTemplate(){
+  ['result-tpl','alert-tpl'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  document.getElementById('stats-tpl').style.display='none';
+  document.getElementById('progress-tpl').classList.add('show');
+  document.getElementById('ptxt-tpl').textContent='Lecture des plannings et génération…';
+  document.getElementById('btn-tpl').disabled=true;
+  const fd=new FormData();
+  s2['tpl-classes'].forEach(f=>fd.append('classes',f));
+  s2['tpl-template'].forEach(f=>fd.append('template',f));
+  fd.append('annee',document.getElementById('annee-select').value);
+  try{
+    const res=await fetch('/generer-template',{method:'POST',body:fd});
+    const data=await res.json();
+    document.getElementById('progress-tpl').classList.remove('show');
+    if(data.error){document.getElementById('atxt-tpl').textContent='Erreur : '+data.error;document.getElementById('alert-tpl').classList.add('show');return;}
+    const annee=document.getElementById('annee-select').value;
+    document.getElementById('rmeta-tpl').textContent=`${data.classes} classe(s) · ${data.nb_mois} mois · ${data.cases_colories} cases coloriées`;
+    document.getElementById('result-tpl').classList.add('show');
+    document.getElementById('dl-tpl').onclick=()=>{const a=document.createElement('a');a.href=`/telecharger/${data.session_id}/${data.fichier}`;a.download=data.fichier;a.click();};
+    document.getElementById('st1').textContent=data.cases_colories;
+    document.getElementById('st2').textContent=data.nb_mois;
+    document.getElementById('st3').textContent=data.classes;
+    document.getElementById('stats-tpl').style.display='grid';
+  }catch(e){
+    document.getElementById('progress-tpl').classList.remove('show');
+    document.getElementById('atxt-tpl').textContent='Erreur : '+e.message;
+    document.getElementById('alert-tpl').classList.add('show');
+  }finally{checkTpl();}
 }
 
-function removeFile(key, i) { store[key].splice(i, 1); renderFiles(key); check(); }
-
-function toggleMonth(btn) {
-  const k = `${btn.dataset.m}/${btn.dataset.y}`;
-  btn.classList.toggle('on');
-  months.has(k) ? months.delete(k) : months.add(k);
-  check();
+// ── Panel 2 (planning) ──
+function drop(e,key){e.preventDefault();const z={'classes':'classes','dispos':'dispos','formateurs':'form','template':'tpl'};document.getElementById('z-'+z[key])?.classList.remove('over');addFiles(key,e.dataTransfer.files);}
+function addFiles(key,files){
+  const single=key==='formateurs'||key==='template';
+  if(single) s1[key]=[files[0]]; else s1[key]=[...s1[key],...Array.from(files)];
+  renderFiles(key); checkPlan();
+}
+function renderFiles(key){
+  const id={classes:'fl-classes',dispos:'fl-dispos',formateurs:'fl-formateurs',template:'fl-template'}[key];
+  document.getElementById(id).innerHTML=s1[key].map((f,i)=>`<div class="file-chip"><span>📄</span><span class="name">${f.name}</span><button onclick="removeFile('${key}',${i})">×</button></div>`).join('');
+}
+function removeFile(key,i){s1[key].splice(i,1);renderFiles(key);checkPlan();}
+function toggleMonth(btn){const k=`${btn.dataset.m}/${btn.dataset.y}`;btn.classList.toggle('on');months.has(k)?months.delete(k):months.add(k);checkPlan();}
+function checkPlan(){
+  const ok=s1.classes.length>0&&s1.dispos.length>0&&s1.formateurs.length>0&&s1.template.length>0&&months.size>0;
+  document.getElementById('btn-plan').disabled=!ok;
+  const miss=[];
+  if(!s1.classes.length)miss.push('plannings');if(!s1.dispos.length)miss.push('disponibilités');
+  if(!s1.formateurs.length)miss.push('tableau formateurs');if(!s1.template.length)miss.push('template');
+  if(!months.size)miss.push('un mois');
+  const hint=document.getElementById('hint-plan');
+  if(ok){hint.textContent=`✓ ${s1.classes.length} classe(s) · ${s1.dispos.length} prof(s) · ${months.size} mois`;hint.className='action-hint ok';}
+  else{hint.textContent=`Il manque : ${miss.join(', ')}.`;hint.className='action-hint';}
 }
 
-function check() {
-  const ok = store.classes.length > 0 && store.dispos.length > 0
-    && store.formateurs.length > 0 && store.template.length > 0
-    && months.size > 0;
-
-  document.getElementById('btn').disabled = !ok;
-
-  const miss = [];
-  if (!store.classes.length)    miss.push('plannings classes');
-  if (!store.dispos.length)     miss.push('disponibilités');
-  if (!store.formateurs.length) miss.push('tableau formateurs');
-  if (!store.template.length)   miss.push('template');
-  if (!months.size)             miss.push('un mois');
-
-  const hint = document.getElementById('hint');
-  if (ok) {
-    hint.textContent = `✓ ${store.classes.length} classe(s) · ${store.dispos.length} formateur(s) · ${months.size} mois sélectionné(s)`;
-    hint.className = 'action-hint ok';
-  } else {
-    hint.textContent = `Il manque : ${miss.join(', ')}.`;
-    hint.className = 'action-hint';
-  }
-}
-
-function progress(msg) {
-  document.getElementById('progress').classList.add('show');
-  document.getElementById('progress-txt').textContent = msg;
-}
-
-async function generer() {
-  document.getElementById('result').classList.remove('show');
-  document.getElementById('heures-card').classList.remove('show');
-  document.getElementById('alert').classList.remove('show');
-  document.getElementById('stats').style.display = 'none';
-
-  progress('Envoi des fichiers…');
-  document.getElementById('btn').disabled = true;
-
-  const fd = new FormData();
-  store.classes.forEach(f    => fd.append('classes', f));
-  store.dispos.forEach(f     => fd.append('dispos', f));
-  store.formateurs.forEach(f => fd.append('formateurs', f));
-  store.template.forEach(f   => fd.append('template', f));
-  fd.append('mois', JSON.stringify([...months]));
-
-  try {
-    progress('Analyse des fichiers et assignation des formateurs…');
-    const res  = await fetch('/generer', { method: 'POST', body: fd });
-    const data = await res.json();
-
-    document.getElementById('progress').classList.remove('show');
-
-    if (data.error) {
-      document.getElementById('alert-txt').textContent = 'Erreur : ' + data.error;
-      document.getElementById('alert').classList.add('show');
-      return;
-    }
-
-    // Résultat
-    document.getElementById('result-meta').textContent =
-      `${data.mois} · ${data.classes} classe(s) · ${data.formateurs_actifs} formateur(s)`;
-    document.getElementById('result').classList.add('show');
-
-    dlUrl = `/telecharger/${data.session_id}/${data.fichier}`;
-    document.getElementById('btn-dl').onclick = () => {
-      const a = document.createElement('a');
-      a.href = dlUrl; a.download = data.fichier; a.click();
-    };
-
-    // Stats
-    document.getElementById('s1').textContent = data.sessions_assignees;
-    document.getElementById('s2').textContent = data.formateurs_actifs;
-    document.getElementById('s3').textContent = data.classes;
-    document.getElementById('s4').textContent = data.creneaux_sans_prof;
-    document.getElementById('stats').style.display = 'grid';
-
-    // Rapport heures
-    const body = document.getElementById('heures-body');
-    body.innerHTML = '';
-    const heures = data.heures_formateurs || {};
-    Object.entries(heures).sort().forEach(([prof, mats]) => {
-      const total = Object.values(mats).reduce((a,b)=>a+b,0);
-      const tags  = Object.entries(mats)
-        .map(([m,h]) => `<span class="tag">${m} <b>${h}h</b></span>`).join(' ');
-      body.innerHTML += `<tr>
-        <td>${prof}</td>
-        <td>${tags}</td>
-        <td style="text-align:right;font-weight:600">${total}h</td>
-      </tr>`;
+async function genererPlanning(){
+  ['result-plan','heures-card','alert-plan'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  document.getElementById('stats-plan').style.display='none';
+  document.getElementById('progress-plan').classList.add('show');
+  document.getElementById('ptxt-plan').textContent='Assignation des formateurs…';
+  document.getElementById('btn-plan').disabled=true;
+  const fd=new FormData();
+  s1.classes.forEach(f=>fd.append('classes',f));
+  s1.dispos.forEach(f=>fd.append('dispos',f));
+  s1.formateurs.forEach(f=>fd.append('formateurs',f));
+  s1.template.forEach(f=>fd.append('template',f));
+  fd.append('mois',JSON.stringify([...months]));
+  try{
+    const res=await fetch('/generer',{method:'POST',body:fd});
+    const data=await res.json();
+    document.getElementById('progress-plan').classList.remove('show');
+    if(data.error){document.getElementById('atxt-plan').textContent='Erreur : '+data.error;document.getElementById('alert-plan').classList.add('show');return;}
+    document.getElementById('rmeta-plan').textContent=`${data.mois} · ${data.classes} classe(s) · ${data.formateurs_actifs} formateur(s)`;
+    document.getElementById('result-plan').classList.add('show');
+    document.getElementById('dl-plan').onclick=()=>{const a=document.createElement('a');a.href=`/telecharger/${data.session_id}/${data.fichier}`;a.download=data.fichier;a.click();};
+    document.getElementById('sp1').textContent=data.sessions_assignees;
+    document.getElementById('sp2').textContent=data.formateurs_actifs;
+    document.getElementById('sp3').textContent=data.classes;
+    document.getElementById('sp4').textContent=data.creneaux_sans_prof;
+    document.getElementById('stats-plan').style.display='grid';
+    const body=document.getElementById('heures-body'); body.innerHTML='';
+    const heures=data.heures_formateurs||{};
+    Object.entries(heures).sort().forEach(([prof,mats])=>{
+      const total=Object.values(mats).reduce((a,b)=>a+b,0);
+      const tags=Object.entries(mats).map(([m,h])=>`<span class="tag">${m} <b>${h}h</b></span>`).join(' ');
+      body.innerHTML+=`<tr><td>${prof}</td><td>${tags}</td><td style="text-align:right;font-weight:600">${total}h</td></tr>`;
     });
-    if (Object.keys(heures).length) document.getElementById('heures-card').classList.add('show');
-
-    if (data.creneaux_sans_prof > 0) {
-      document.getElementById('alert-txt').textContent =
-        `${data.creneaux_sans_prof} créneau(x) sans formateur disponible — à compléter manuellement dans le fichier Excel.`;
-      document.getElementById('alert').classList.add('show');
-    }
-
-  } catch(e) {
-    document.getElementById('progress').classList.remove('show');
-    document.getElementById('alert-txt').textContent = 'Erreur réseau : ' + e.message;
-    document.getElementById('alert').classList.add('show');
-  } finally {
-    check();
-  }
+    if(Object.keys(heures).length)document.getElementById('heures-card').classList.add('show');
+    if(data.creneaux_sans_prof>0){document.getElementById('atxt-plan').textContent=`${data.creneaux_sans_prof} créneau(x) sans formateur — à compléter manuellement.`;document.getElementById('alert-plan').classList.add('show');}
+  }catch(e){
+    document.getElementById('progress-plan').classList.remove('show');
+    document.getElementById('atxt-plan').textContent='Erreur : '+e.message;
+    document.getElementById('alert-plan').classList.add('show');
+  }finally{checkPlan();}
 }
 </script>
 </body>
