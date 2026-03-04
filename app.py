@@ -545,7 +545,7 @@ def generer_template_mois(template_path, output_path, annee, mois):
 # ─── Routes ───────────────────────────────────────────────────────────────────
 @app.route('/')
 def index():
-    return send_file('index.html')
+    return render_template("index.html")
 
 @app.route('/generer', methods=['POST'])
 def generer():
