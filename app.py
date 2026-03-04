@@ -558,6 +558,57 @@ def generer_template_mois(template_path, output_path, annee, mois):
     wb.save(output_path)
     return len(jours_ouvres)
 
+
+# ─── Excel multi-feuilles (une feuille par mois) ─────────────────────────────
+def generer_excel_multifeuilles(template_path, mois_liste, output_path):
+    """
+    Génère un seul fichier Excel avec une feuille par mois.
+    Chaque feuille est le template vierge adapté au mois.
+    """
+    import copy
+    from openpyxl import Workbook
+
+    wb_out = Workbook()
+    wb_out.remove(wb_out.active)  # supprimer la feuille vide par défaut
+
+    total_jours = 0
+
+    for (annee, mois) in mois_liste:
+        # Générer le mois dans un fichier temporaire
+        tmp_path = output_path + f"_tmp_{mois}_{annee}.xlsx"
+        nb_jours = generer_template_mois(template_path, tmp_path, annee, mois)
+        total_jours += nb_jours
+
+        # Copier la feuille dans le workbook de sortie
+        wb_tmp = load_workbook(tmp_path)
+        ws_src = wb_tmp.active
+        nom_feuille = f"{MOIS_FR_UPPER[mois][:4]} {annee}"  # ex: "OCTO 2026"
+        ws_dst = wb_out.create_sheet(title=nom_feuille)
+
+        # Copier toutes les cellules, styles, dimensions, fusions
+        for row in ws_src.iter_rows():
+            for cell in row:
+                nc = ws_dst.cell(row=cell.row, column=cell.column)
+                nc.value = cell.value
+                if cell.has_style:
+                    nc.font      = copy.copy(cell.font)
+                    nc.fill      = copy.copy(cell.fill)
+                    nc.border    = copy.copy(cell.border)
+                    nc.alignment = copy.copy(cell.alignment)
+                    nc.number_format = cell.number_format
+        for cl, cd in ws_src.column_dimensions.items():
+            ws_dst.column_dimensions[cl].width = cd.width
+        for ri, rd in ws_src.row_dimensions.items():
+            ws_dst.row_dimensions[ri].height = rd.height
+        for mg in ws_src.merged_cells.ranges:
+            ws_dst.merge_cells(str(mg))
+
+        wb_tmp.close()
+        os.remove(tmp_path)
+
+    wb_out.save(output_path)
+    return total_jours
+
 # ─── Routes ───────────────────────────────────────────────────────────────────
 @app.route('/')
 def index():
@@ -616,15 +667,66 @@ def generer_template_colorie_route():
     except Exception as e:
         import traceback; return jsonify({'error': str(e), 'trace': traceback.format_exc()}), 500
 
+
+def generer_excel_multifeuilles(template_path, mois_liste, output_path):
+    """
+    Génère un Excel avec une feuille par mois.
+    Chaque feuille est une copie complète du template avec les dates du mois.
+    """
+    from openpyxl import Workbook
+    wb_out = Workbook()
+    wb_out.remove(wb_out.active)  # supprimer la feuille vide par défaut
+
+    for (annee, mois) in mois_liste:
+        nom_mois = MOIS_FR_UPPER[mois]
+        # Générer le mois dans un fichier temporaire
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
+            tmp_path = tmp.name
+        generer_template_mois(template_path, tmp_path, annee, mois)
+
+        # Lire le fichier généré et copier sa feuille dans wb_out
+        wb_tmp = load_workbook(tmp_path)
+        ws_src = wb_tmp.active
+        sheet_name = f"{MOIS_FR[mois][:4]} {annee}"  # ex: "Oct 2026"
+        ws_dst = wb_out.create_sheet(title=sheet_name)
+
+        # Copier cellules, styles, dimensions, fusions
+        for row in ws_src.iter_rows():
+            for cell in row:
+                nc = ws_dst.cell(row=cell.row, column=cell.column)
+                nc.value = cell.value
+                if cell.has_style:
+                    nc.font      = copy.copy(cell.font)
+                    nc.fill      = copy.copy(cell.fill)
+                    nc.border    = copy.copy(cell.border)
+                    nc.alignment = copy.copy(cell.alignment)
+                    nc.number_format = cell.number_format
+        for col, cd in ws_src.column_dimensions.items():
+            ws_dst.column_dimensions[col].width = cd.width
+        for r, rd in ws_src.row_dimensions.items():
+            ws_dst.row_dimensions[r].height = rd.height
+        for mg in ws_src.merged_cells.ranges:
+            ws_dst.merge_cells(str(mg))
+
+        wb_tmp.close()
+        os.unlink(tmp_path)
+
+    wb_out.save(output_path)
+
 @app.route('/generer-template-vierge', methods=['POST'])
 def generer_template_vierge_route():
     """
-    Génère un template d'affichage vierge pour un mois donné.
+    Génère un ou plusieurs templates vierges (jusqu'à 12 mois) dans un ZIP.
     Paramètres POST :
-      - template : fichier .xlsx de référence (template_vierge_SEPTEMBRE_2026.xlsx)
-      - annee    : année (ex: 2026)
-      - mois     : numéro du mois (ex: 10 pour octobre)
+      - template    : fichier .xlsx de référence
+      - annee_debut : année de début
+      - mois_debut  : mois de début (1-12)
+      - annee_fin   : année de fin
+      - mois_fin    : mois de fin (1-12)
     """
+    import zipfile
+
     sid = str(uuid.uuid4())[:8]
     wd  = os.path.join(UPLOAD_FOLDER, sid)
     os.makedirs(wd)
@@ -639,25 +741,82 @@ def generer_template_vierge_route():
         if not tf:
             return jsonify({'error': 'Template manquant'}), 400
 
-        annee = int(request.form.get('annee', 2026))
-        mois  = int(request.form.get('mois',  10))
-
-        if not (1 <= mois <= 12):
-            return jsonify({'error': 'Mois invalide (1-12)'}), 400
+        annee_debut = int(request.form.get('annee_debut', 2026))
+        mois_debut  = int(request.form.get('mois_debut',  1))
+        annee_fin   = int(request.form.get('annee_fin',   2026))
+        mois_fin    = int(request.form.get('mois_fin',    12))
 
         tp = save(tf)
-        nom_mois = MOIS_FR_UPPER[mois]
-        on = f"{nom_mois}_{annee}.xlsx"
-        op = os.path.join(wd, on)
 
-        nb_jours = generer_template_mois(tp, op, annee, mois)
+        # Construire la liste ordonnée de mois à générer
+        mois_liste = []
+        a, m = annee_debut, mois_debut
+        while (a, m) <= (annee_fin, mois_fin):
+            mois_liste.append((a, m))
+            m += 1
+            if m > 12:
+                m = 1; a += 1
+            if len(mois_liste) > 12:
+                break  # sécurité max 12 mois
 
-        return jsonify({
-            'fichier':     on,
-            'session_id':  sid,
-            'mois':        f"{nom_mois} {annee}",
-            'nb_jours':    nb_jours,
-        })
+        if not mois_liste:
+            return jsonify({'error': 'Plage de mois invalide'}), 400
+
+        fichiers_generes = []
+        total_jours = 0
+
+        for (annee, mois) in mois_liste:
+            nom_mois = MOIS_FR_UPPER[mois]
+            on = f"{nom_mois}_{annee}.xlsx"
+            op = os.path.join(wd, on)
+            nb_jours = generer_template_mois(tp, op, annee, mois)
+            fichiers_generes.append(on)
+            total_jours += nb_jours
+
+        a_deb, m_deb = mois_liste[0]
+        a_fin, m_fin = mois_liste[-1]
+        label = f"{MOIS_FR_UPPER[m_deb]} {a_deb}" if len(mois_liste)==1 else f"{MOIS_FR_UPPER[m_deb]} {a_deb} → {MOIS_FR_UPPER[m_fin]} {a_fin}"
+        format_sortie = request.form.get('format', 'zip')  # 'zip' ou 'excel'
+
+        if format_sortie == 'excel' and len(mois_liste) > 1:
+            # Excel multi-feuilles
+            excel_name = f"Templates_{MOIS_FR_UPPER[m_deb]}_{a_deb}_au_{MOIS_FR_UPPER[m_fin]}_{a_fin}.xlsx"
+            excel_path = os.path.join(wd, excel_name)
+            generer_excel_multifeuilles(tp, mois_liste, excel_path)
+            return jsonify({
+                'fichier':    excel_name,
+                'session_id': sid,
+                'mois':       label,
+                'nb_jours':   total_jours,
+                'nb_mois':    len(mois_liste),
+                'format':     'excel',
+            })
+        elif len(mois_liste) == 1:
+            # Un seul mois : retourner directement le .xlsx
+            on = fichiers_generes[0]
+            return jsonify({
+                'fichier':    on,
+                'session_id': sid,
+                'mois':       label,
+                'nb_jours':   total_jours,
+                'nb_mois':    1,
+                'format':     'xlsx',
+            })
+        else:
+            # ZIP (plusieurs fichiers séparés)
+            zip_name = f"Templates_{MOIS_FR_UPPER[m_deb]}_{a_deb}_au_{MOIS_FR_UPPER[m_fin]}_{a_fin}.zip"
+            zip_path = os.path.join(wd, zip_name)
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+                for fn in fichiers_generes:
+                    zf.write(os.path.join(wd, fn), fn)
+            return jsonify({
+                'fichier':    zip_name,
+                'session_id': sid,
+                'mois':       label,
+                'nb_jours':   total_jours,
+                'nb_mois':    len(mois_liste),
+                'format':     'zip',
+            })
 
     except Exception as e:
         import traceback
