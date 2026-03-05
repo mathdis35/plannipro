@@ -774,6 +774,8 @@ def _appliquer_mois_sur_feuille(ws, annee, mois, grey_row_override=None):
         if delete_from <= delete_until:
             ws.delete_rows(delete_from, delete_until - delete_from + 1)
 
+    return len(jours_ouvres)
+
 @app.route('/generer-template-vierge', methods=['POST'])
 def generer_template_vierge_route():
     """
