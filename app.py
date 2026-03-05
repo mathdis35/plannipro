@@ -630,7 +630,7 @@ def index():
 
 @app.route('/generer', methods=['POST'])
 def generer():
-    sid = str(uuid.uuid4())[:8]; wd = os.path.join(UPLOAD_FOLDER, sid); os.makedirs(wd)
+    sid = str(uuid.uuid4())[:8]; wd = os.path.join(UPLOAD_FOLDER, sid); os.makedirs(wd, exist_ok=True)
     def save(f, sub=''):
         d = os.path.join(wd, sub) if sub else wd; os.makedirs(d, exist_ok=True)
         p = os.path.join(d, f.filename); f.save(p); return p
@@ -661,7 +661,7 @@ def generer():
 
 @app.route('/generer-template', methods=['POST'])
 def generer_template_colorie_route():
-    sid = str(uuid.uuid4())[:8]; wd = os.path.join(UPLOAD_FOLDER, sid); os.makedirs(wd)
+    sid = str(uuid.uuid4())[:8]; wd = os.path.join(UPLOAD_FOLDER, sid); os.makedirs(wd, exist_ok=True)
     def save(f, sub=''):
         d = os.path.join(wd, sub) if sub else wd; os.makedirs(d, exist_ok=True)
         p = os.path.join(d, f.filename); f.save(p); return p
@@ -793,16 +793,15 @@ def generer_template_vierge_route():
     """
     import zipfile
 
-    sid = str(uuid.uuid4())[:8]
-    wd  = os.path.join(UPLOAD_FOLDER, sid)
-    os.makedirs(wd)
-
-    def save(f):
-        p = os.path.join(wd, f.filename)
-        f.save(p)
-        return p
-
     try:
+        sid = str(uuid.uuid4())[:8]
+        wd  = os.path.join(UPLOAD_FOLDER, sid)
+        os.makedirs(wd, exist_ok=True)
+
+        def save(f):
+            p = os.path.join(wd, secure_filename(f.filename) if f.filename else 'template.xlsx')
+            f.save(p)
+            return p
         tf = request.files.get('template')
         if not tf:
             return jsonify({'error': 'Template manquant'}), 400
