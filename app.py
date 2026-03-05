@@ -612,7 +612,7 @@ def generer_excel_multifeuilles(template_path, mois_liste, output_path):
 # ─── Routes ───────────────────────────────────────────────────────────────────
 @app.route('/')
 def index():
-    return send_file('index.html')
+    return send_file(os.path.join(os.path.dirname(__file__), 'index.html'))
 
 @app.route('/generer', methods=['POST'])
 def generer():
