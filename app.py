@@ -358,7 +358,7 @@ def detect_structure(ws):
         break
     return {'class_cols': cc, 'class_colors': colors, 'first_data_row': fdr, 'day_label_col': dlc}
 
-def generer_template_colorie(template_path, planning_classes, annee_debut, output_path):
+def generer_template_colorie(template_path, planning_classes, annee_debut, output_path, mois_cibles=None):
     wb_tpl = load_workbook(template_path)
     struct = detect_structure(wb_tpl.active)
     cc = struct['class_cols']; colors = struct['class_colors']
@@ -369,9 +369,14 @@ def generer_template_colorie(template_path, planning_classes, annee_debut, outpu
         if nom not in colors:
             colors[nom] = DEFAULT_COLORS[ci % len(DEFAULT_COLORS)]; ci += 1
 
-    mois_scolaire = [(9,annee_debut),(10,annee_debut),(11,annee_debut),(12,annee_debut),
-                     (1,annee_debut+1),(2,annee_debut+1),(3,annee_debut+1),(4,annee_debut+1),
-                     (5,annee_debut+1),(6,annee_debut+1),(7,annee_debut+1),(8,annee_debut+1)]
+    mois_scolaire_all = [(9,annee_debut),(10,annee_debut),(11,annee_debut),(12,annee_debut),
+                          (1,annee_debut+1),(2,annee_debut+1),(3,annee_debut+1),(4,annee_debut+1),
+                          (5,annee_debut+1),(6,annee_debut+1),(7,annee_debut+1),(8,annee_debut+1)]
+    if mois_cibles:
+        cibles_set = {(int(m2), int(a2)) for a2, m2 in mois_cibles}
+        mois_scolaire = [(m2, a2) for m2, a2 in mois_scolaire_all if (m2, a2) in cibles_set]
+    else:
+        mois_scolaire = mois_scolaire_all
     jf_nom = {0:'Lundi',1:'Mardi',2:'Mercredi',3:'Jeudi',4:'Vendredi'}
 
     wb_out = Workbook(); wb_out.remove(wb_out.active)
@@ -393,8 +398,15 @@ def generer_template_colorie(template_path, planning_classes, annee_debut, outpu
             ws.column_dimensions[cl].width = cd.width
         for ri, rd in ws_src.row_dimensions.items():
             ws.row_dimensions[ri].height = rd.height
+        # APRÈS — Bug #2 corrigé : bypass ws.merge_cells() O(n²) → CellRange direct
+        from openpyxl.worksheet.cell_range import CellRange as _CR
+        _seen = set()
         for mg in ws_src.merged_cells.ranges:
-            ws.merge_cells(str(mg))
+            k = str(mg)
+            if k not in _seen:
+                _seen.add(k)
+                try: ws.merged_cells.ranges.add(_CR(k))
+                except: pass
 
         for ri in range(1, 4):
             for ci2 in range(1, ws.max_column+1):
@@ -472,14 +484,20 @@ def generer_template_mois(template_path, output_path, annee, mois):
     wb = load_workbook(output_path)
     ws = wb.active
 
-    # Mettre à jour le titre
+    # APRÈS — Bug #4 corrigé : remplace tout mois + année dans le titre
+    # Ne dépend plus du fait que le template contienne exactement "SEPTEMBRE 2026"
     nom_mois = MOIS_FR_UPPER[mois]
     for r in range(1, 4):
-        for c in range(1, ws.max_column + 1):
-            v = ws.cell(row=r, column=c).value
-            if isinstance(v, str) and 'SEPTEMBRE' in v.upper():
-                ws.cell(row=r, column=c).value = v.replace(
-                    "SEPTEMBRE 2026", f"{nom_mois} {annee}"
+        for col in range(1, ws.max_column + 1):
+            v = ws.cell(row=r, column=col).value
+            if not isinstance(v, str): continue
+            # Remplace "NOM_MOIS ANNÉE" par le nouveau mois
+            # Cherche n'importe quel nom de mois suivi d'une année 20xx
+            import re as _re
+            pattern = r'(?:JANVIER|FÉVRIER|FEVRIER|MARS|AVRIL|MAI|JUIN|JUILLET|'                       r'AOÛT|AOUT|SEPTEMBRE|OCTOBRE|NOVEMBRE|DÉCEMBRE|DECEMBRE)'                       r' 20\d\d'
+            if _re.search(pattern, v.upper()):
+                ws.cell(row=r, column=col).value = _re.sub(
+                    pattern, f"{nom_mois} {annee}", v.upper(), flags=_re.IGNORECASE
                 )
 
     # ── 4. Supprimer les slots vides au début ─────────────────────────────────
@@ -638,24 +656,80 @@ def generer():
         d = os.path.join(wd, sub) if sub else wd; os.makedirs(d, exist_ok=True)
         p = os.path.join(d, f.filename); f.save(p); return p
     try:
-        cf = request.files.getlist('classes'); df = request.files.getlist('dispos')
+        # Compat nouveau front (planning_0/N, disponibilites, formateurs)
+        # vs ancien front (classes getlist, dispos getlist, formateurs)
+        cf_new = [request.files[k] for k in sorted(request.files) if k.startswith('planning_')]
+        cf_old = request.files.getlist('classes')
+        cf = cf_new if cf_new else cf_old
+
+        # disponibilites : nouveau front envoie 1 fichier 'disponibilites'
+        # ancien front envoyait une liste 'dispos'
+        dispos_file = request.files.get('disponibilites')
+        df_old = request.files.getlist('dispos')
+
         ff = request.files.get('formateurs'); tf = request.files.get('template')
-        mois = set(json.loads(request.form.get('mois', '[]')))
-        if not all([cf, df, ff, tf, mois]): return jsonify({'error': 'Fichiers manquants'}), 400
+        if not all([cf, ff, tf]) or (not dispos_file and not df_old):
+            return jsonify({'error': 'Fichiers manquants (template, disponibilites, formateurs, plannings requis)'}), 400
+
+        # Plage de mois : nouveau front (annee_debut/mois_debut/annee_fin/mois_fin)
+        annee_debut = int(request.form.get('annee_debut', 2026))
+        mois_debut  = int(request.form.get('mois_debut',  9))
+        annee_fin   = int(request.form.get('annee_fin',   annee_debut + 1))
+        mois_fin    = int(request.form.get('mois_fin',    8))
+
+        # APRÈS — Bug #3 corrigé : priorité à mois_json (liste exacte)
+        # Bug #4 latent corrigé : mois_old avait annee/mois inversés (sans impact
+        #   avec le nouveau front qui n'envoie jamais 'mois')
+        mois_json = request.form.get('mois_json')
+        if mois_json:
+            mois_liste = [(int(a), int(m)) for a, m in json.loads(mois_json)][:12]
+        else:
+            # Fallback plage (ancien front ou appel direct)
+            mois_liste = []
+            a, m = annee_debut, mois_debut
+            while (a, m) <= (annee_fin, mois_fin):
+                mois_liste.append((a, m))
+                m += 1
+                if m > 12: m = 1; a += 1
+                if len(mois_liste) > 12: break
+            # Ancien format mois set JSON "mois/annee" (compatibilité)
+            mois_old = set(json.loads(request.form.get('mois', '[]')))
+            if mois_old:
+                # Format correct : "9/2026" → (annee=2026, mois=9)
+                mois_liste = [(int(mo.split('/')[1]), int(mo.split('/')[0])) for mo in mois_old]
+
+        if not mois_liste: return jsonify({'error': 'Plage de mois invalide'}), 400
+
         cp = [save(f, 'classes') for f in cf if f.filename]
-        dp = [save(f, 'dispos')  for f in df if f.filename]
         fp = save(ff); tp = save(tf)
-        pcs = [c for c in [parse_planning_classe(p) for p in cp] if c]
+
+        if dispos_file:
+            dp = [save(dispos_file, 'dispos')]
+        else:
+            dp = [save(f, 'dispos') for f in df_old if f.filename]
+
+        pcs    = [cl for cl in [parse_planning_classe(p) for p in cp] if cl]
         dispos = [parse_disponibilite(p) for p in dp]
-        aff = parse_tableau_formateurs(fp)
+        aff    = parse_tableau_formateurs(fp)
         assignment, stats, heures = assigner(pcs, dispos, aff)
-        on = f"Planning_{'_'.join(m.replace('/','') for m in sorted(mois))}.xlsx"
+
+        mois_str = ', '.join(f"{MOIS_FR[m][:3]} {a}" for a, m in mois_liste)
+        mois_set = {f"{m}/{a}" for a, m in mois_liste}
+        on = f"Planning_Formateurs_{annee_debut}_{annee_fin}.xlsx"
         op = os.path.join(wd, on)
-        ecrire_planning(tp, assignment, mois, op)
+
+        # APRÈS — Bug #1 corrigé : ecrire_planning attend un fichier multi-feuilles
+        # (une feuille par mois avec le nom du mois dans le titre de cellule).
+        # On génère d'abord le template vierge multi-feuilles, puis on y écrit les assignations.
+        tmp_multi = os.path.join(wd, '_tmp_multi.xlsx')
+        generer_excel_multifeuilles(tp, mois_liste, tmp_multi)
+        ecrire_planning(tmp_multi, assignment, mois_set, op)
+        try: os.unlink(tmp_multi)
+        except: pass
         return jsonify({
             'sessions_assignees': stats['assigned'], 'creneaux_sans_prof': stats['warn'],
             'formateurs_actifs': len(heures), 'classes': len(pcs),
-            'mois': ', '.join(f"{MOIS_FR[int(m.split('/')[0])]} {m.split('/')[1]}" for m in mois),
+            'mois': mois_str, 'nb_mois': len(mois_liste),
             'fichier': on, 'session_id': sid,
             'heures_formateurs': {p: dict(m) for p, m in heures.items()}
         })
@@ -669,17 +743,48 @@ def generer_template_colorie_route():
         d = os.path.join(wd, sub) if sub else wd; os.makedirs(d, exist_ok=True)
         p = os.path.join(d, f.filename); f.save(p); return p
     try:
-        cf = request.files.getlist('classes'); tf = request.files.get('template')
-        annee = int(request.form.get('annee', 2026))
+        # Compat nouveau front : planning_0, planning_1, ...
+        # Ancien front envoyait 'classes' (getlist) — on accepte les deux
+        cf_new = [request.files[k] for k in sorted(request.files) if k.startswith('planning_')]
+        cf_old = request.files.getlist('classes')
+        cf = cf_new if cf_new else cf_old
+        tf = request.files.get('template')
         if not cf or not tf: return jsonify({'error': 'Fichiers manquants'}), 400
+
+        # Plage de mois : nouveau front (annee_debut/mois_debut/annee_fin/mois_fin)
+        # ou ancien front (annee + mois_liste JSON)
+        annee_debut = int(request.form.get('annee_debut', request.form.get('annee', 2026)))
+        mois_debut  = int(request.form.get('mois_debut', 9))
+        annee_fin   = int(request.form.get('annee_fin', annee_debut + (0 if mois_debut <= 8 else 0)))
+        mois_fin    = int(request.form.get('mois_fin', 8))
+        annee       = annee_debut  # compatibilité
+
+        # APRÈS — Bug #3 corrigé : priorité à mois_json (liste exacte)
+        mois_json = request.form.get('mois_json')
+        mois_liste_json = request.form.get('mois_liste')
+        if mois_json:
+            mois_cibles = [(int(a2), int(m2)) for a2, m2 in json.loads(mois_json)][:12]
+        elif mois_liste_json:
+            mois_cibles = [(int(a2), int(m2)) for a2, m2 in json.loads(mois_liste_json)][:12]
+        else:
+            mois_cibles = []
+            a, m = annee_debut, mois_debut
+            while (a, m) <= (annee_fin, mois_fin):
+                mois_cibles.append((a, m))
+                m += 1
+                if m > 12: m = 1; a += 1
+                if len(mois_cibles) > 12: break
+        if not mois_cibles: mois_cibles = None
+
         cp = [save(f, 'classes') for f in cf if f.filename]; tp = save(tf)
-        pcs = [c for c in [parse_planning_classe(p) for p in cp] if c]
+        pcs = [cl for cl in [parse_planning_classe(p) for p in cp] if cl]
         on = f"Template_Affichage_{annee}_{annee+1}.xlsx"; op = os.path.join(wd, on)
-        total, nb = generer_template_colorie(tp, pcs, annee, op)
+        total, nb = generer_template_colorie(tp, pcs, annee, op, mois_cibles=mois_cibles)
         return jsonify({
             'fichier': on, 'session_id': sid, 'nb_mois': nb,
             'cases_colories': total, 'classes': len(pcs),
-            'noms_classes': [c['nom'] for c in pcs if c.get('nom')]
+            'noms_classes': [cl['nom'] for cl in pcs if cl.get('nom')],
+            'format': 'excel',  # APRÈS — Bug #5 : homogénéiser le JSON
         })
     except Exception as e:
         import traceback; return jsonify({'error': str(e), 'trace': traceback.format_exc()}), 500
@@ -809,23 +914,34 @@ def generer_template_vierge_route():
         if not tf:
             return jsonify({'error': 'Template manquant'}), 400
 
-        annee_debut = int(request.form.get('annee_debut', 2026))
-        mois_debut  = int(request.form.get('mois_debut',  1))
-        annee_fin   = int(request.form.get('annee_fin',   2026))
-        mois_fin    = int(request.form.get('mois_fin',    12))
-
         tp = save(tf)
 
-        # Construire la liste ordonnée de mois à générer
-        mois_liste = []
-        a, m = annee_debut, mois_debut
-        while (a, m) <= (annee_fin, mois_fin):
-            mois_liste.append((a, m))
-            m += 1
-            if m > 12:
-                m = 1; a += 1
-            if len(mois_liste) > 12:
-                break  # sécurité max 12 mois
+        # APRÈS — Bug #3 corrigé : mois_json = liste exacte des mois sélectionnés
+        # Priorité 1 : mois_json [[annee, mois], ...] (nouveau front)
+        # Priorité 2 : mois_liste JSON (compatibilité)
+        # Fallback    : plage annee_debut/mois_debut → annee_fin/mois_fin
+        mois_json = request.form.get('mois_json')
+        mois_liste_json = request.form.get('mois_liste')
+        if mois_json:
+            raw = json.loads(mois_json)
+            mois_liste = [(int(a), int(m)) for a, m in raw][:12]
+        elif mois_liste_json:
+            raw = json.loads(mois_liste_json)
+            mois_liste = [(int(a), int(m)) for a, m in raw][:12]
+        else:
+            annee_debut = int(request.form.get('annee_debut', 2026))
+            mois_debut  = int(request.form.get('mois_debut',  1))
+            annee_fin   = int(request.form.get('annee_fin',   2026))
+            mois_fin    = int(request.form.get('mois_fin',    12))
+            mois_liste = []
+            a, m = annee_debut, mois_debut
+            while (a, m) <= (annee_fin, mois_fin):
+                mois_liste.append((a, m))
+                m += 1
+                if m > 12:
+                    m = 1; a += 1
+                if len(mois_liste) > 12:
+                    break
 
         if not mois_liste:
             return jsonify({'error': 'Plage de mois invalide'}), 400
